@@ -1,0 +1,49 @@
+version: 0.2
+phases:
+  install:
+    commands:
+      - yum install -y git gcc docker python27-pip python27-devel libffi-devel openssl-devel git curl util-linux
+      - /usr/bin/pip install -U docker ansible awscli
+      - service docker start
+      - $(aws ecr get-login --no-include-email)
+      - set
+  build:
+    commands:
+      - git checkout $AWX_VERSION
+      - cd installer/
+      - echo ansible-playbook -i inventory -e awx_version=$AWX_VERSION,pg_hostname=$pg_hostname,pg_username=$pg_username,pg_password=$pg_password,pg_database=awx,pg_port=5432,default_admin_user="$awx_username",default_admin_password="$awx_password" install.yml
+      - ansible-playbook -i inventory -e awx_version=$AWX_VERSION,pg_hostname="$pg_hostname",pg_username="$pg_username",pg_password="$pg_password",pg_database="awx",pg_port="5432",default_admin_user="$awx_username",default_admin_password="$awx_password" install.yml
+      - docker container ls --all
+      - docker image ls --all
+      - export ACCOUNT_ID=$(echo ${CODEBUILD_BUILD_ARN} | awk -F':' '{print $5}')
+      - export RABBITMQ_TAG=$(docker image ls --all | grep rabbitmq | awk '{print $2}' | cut -d ':' -f 2)
+      - export RABBITMQ_IMAGE=$(docker image ls --all | grep rabbitmq | awk '{print $1}')
+      - export MEMCACHED_TAG=$(docker image ls --all | grep memcached | awk '{print $2}' | cut -d ':' -f 2)
+      - export MEMCACHED_IMAGE=$(docker image ls --all | grep memcached | awk '{print $1}')
+      - echo RabbitMQ ${RABBITMQ_IMAGE}, ${RABBITMQ_TAG}
+      - echo Memcached ${MEMCACHED_IMAGE}, ${MEMCACHED_TAG}
+      - >
+        docker tag ansible/awx_task ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWX_TASK_REPO}:${AWX_VERSION} &&
+        docker push ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWX_TASK_REPO}:${AWX_VERSION}
+      - >
+        docker tag ansible/awx_web ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWX_WEB_REPO}:${AWX_VERSION} &&
+        docker push ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWX_WEB_REPO}:${AWX_VERSION}
+      - >
+        docker tag ${MEMCACHED_IMAGE}:${MEMCACHED_TAG} ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${MEMCACHED_REPO}:${AWX_VERSION} &&
+        docker push ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${MEMCACHED_REPO}:${AWX_VERSION}
+      - >
+        docker tag ${RABBITMQ_IMAGE}:${RABBITMQ_TAG} ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${RABBITMQ_REPO}:${AWX_VERSION} &&
+        docker push ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${RABBITMQ_REPO}:${AWX_VERSION}
+  post_build:
+    commands:
+      # FIXME: Need to trap and only execute this if the Build is passing.
+      - echo "Signal back if we have gotten this far"
+      # FIXME: Wanted to add a UUID but then I have an issue with storing these somewhere.
+      - export UUID=1233244324
+      - |
+        if [ $CODEBUILD_BUILD_SUCCEEDING -eq 1 ]
+        then
+          curl -X PUT -H 'Content-Type:' -d "{\"StackId\":\"$cfn_stack_id\", \"RequestId\":\"$cfn_request_id\", \"LogicalResourceId\":\"$cfn_logical_resource_id\", \"PhysicalResourceId\":\"$UUID\", \"Status\":\"SUCCESS\"}" "$cfn_signal_url"
+        else
+          curl -X PUT -H 'Content-Type:' -d "{\"StackId\":\"$cfn_stack_id\", \"RequestId\":\"$cfn_request_id\", \"LogicalResourceId\":\"$cfn_logical_resource_id\", \"PhysicalResourceId\":\"$UUID\", \"Status\":\"FAILED\"}" "$cfn_signal_url"
+        fi
