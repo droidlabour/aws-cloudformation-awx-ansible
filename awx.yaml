@@ -86,10 +86,7 @@ Parameters:
   AWXVersion:
     Description: Which version of AWX to use
     Type: String
-    Default: 1.0.1
-    AllowedValues:
-      - 1.0.1
-      - 1.0.0
+    Default: 3.0.0
   AWXGitHubRepo:
     Description: Which github should we use as the source for the build
     Type: String
@@ -121,8 +118,6 @@ Parameters:
 Conditions:
   isFargate: !Equals [!Ref 'LaunchType', 'FARGATE']
 Resources:
-  mockresource:
-    Type: AWS::S3::Bucket
   CodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
@@ -247,13 +242,15 @@ Resources:
                 - export RABBITMQ_IMAGE=$(docker image ls --all | grep rabbitmq | awk '{print $1}')
                 - export MEMCACHED_TAG=$(docker image ls --all | grep memcached | awk '{print $2}' | cut -d ':' -f 2)
                 - export MEMCACHED_IMAGE=$(docker image ls --all | grep memcached | awk '{print $1}')
+                - export AWX_TAG=$(docker image ls --all | grep awx_web | awk '{print $2}' | cut -d ':' -f 2)
                 - echo RabbitMQ ${RABBITMQ_IMAGE}, ${RABBITMQ_TAG}
                 - echo Memcached ${MEMCACHED_IMAGE}, ${MEMCACHED_TAG}
+                - echo AWX_TAG ${AWX_TAG}
                 - >
-                  docker tag ansible/awx_task ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWX_TASK_REPO}:${AWX_VERSION} &&
+                  docker tag ansible/awx_task:${AWX_TAG} ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWX_TASK_REPO}:${AWX_VERSION} &&
                   docker push ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWX_TASK_REPO}:${AWX_VERSION}
                 - >
-                  docker tag ansible/awx_web ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWX_WEB_REPO}:${AWX_VERSION} &&
+                  docker tag ansible/awx_web:${AWX_TAG} ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWX_WEB_REPO}:${AWX_VERSION} &&
                   docker push ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWX_WEB_REPO}:${AWX_VERSION}
                 - >
                   docker tag ${MEMCACHED_IMAGE}:${MEMCACHED_TAG} ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${MEMCACHED_REPO}:${AWX_VERSION} &&
@@ -546,6 +543,8 @@ Resources:
           Environment:
             - Name: "RABBITMQ_DEFAULT_VHOST"
               Value: "awx"
+            - Name: "RABBITMQ_ERLANG_COOKIE"
+              Value: "cookiemonster"
         - Name: awx
           Hostname: awx
           Essential: true
