@@ -1,5 +1,46 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Deploys a AWX Cluster
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Amazon ALB Configuration
+        Parameters:
+          - ALBARN
+      - Label:
+          default: Network Configuration
+        Parameters:
+          - VPC
+      - Label:
+          default: Amazon ECS Configuration
+        Parameters:
+          - Cluster
+          - LaunchType
+      - Label:
+          default: Ansible AWX Configuration
+        Parameters:
+          - AWXAdminUsername
+          - AWXAdminPassword
+      - Label:
+          default: Amazon RDS Configuration
+        Parameters:
+          - DatabaseEndpoint
+          - MasterUsername
+          - MasterUserPassword
+      - Label:
+          default: Amazon CodeBuild Configuration
+        Parameters:
+          - AWXVersion
+          - AWXGitHubRepo
+          - QSS3BucketName
+          - QSS3KeyPrefix
+      - Label:
+          default: Amazon ECR Configuration
+        Parameters:
+          - AWXWebRegistry
+          - AWXTaskRegistry
+          - RabbitMQRegistry
+          - MemcachedRegistry
 Parameters:
   LaunchType:
     Description: ECS Launch Type with either Fargate or EC2

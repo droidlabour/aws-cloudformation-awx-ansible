@@ -1,5 +1,45 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: 'This template deploys an ECS cluster to the provided VPC and subnets using an Auto Scaling Group'
+Description: ECS cluster with Auto Scaling Group and ALB
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Availability Zone Configuration
+        Parameters:
+          - NumberOfAvailabilityZones
+      - Label:
+          default: Amazon ALB Configuration
+        Parameters:
+          - ALBSubnets
+      - Label:
+          default: Network Configuration
+        Parameters:
+          - VPC
+          - RemoteAccessCIDR
+          - RDSAccessCidr
+      - Label:
+          default: Amazon EC2 Configuration
+        Parameters:
+          - InstanceType
+          - ClusterSize
+          - ECSSubnets
+          - KeyPairName
+      - Label:
+          default: Amazon RDS Configuration
+        Parameters:
+          - RDSSubnets
+          - AllocatedStorageAndIops
+          - AllowMajorVersionUpgrade
+          - AutoMinorVersionUpgrade
+          - DBInstanceClass
+          - DBName
+          - EngineVersion
+          - MasterUsername
+          - MasterUserPassword
+          - MultiAZ
+          - PortNumber
+          - PubliclyAccessible
+          - StorageType
 Parameters:
   InstanceType:
     Description: Which instance type should we use to build the ECS cluster?
