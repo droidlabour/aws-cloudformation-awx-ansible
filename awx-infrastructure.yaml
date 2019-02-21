@@ -300,6 +300,16 @@ Conditions:
 Resources:
   ECSCluster:
     Type: AWS::ECS::Cluster
+  SSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ECS SSH
+      VpcId: !Ref 'VPC'
+      SecurityGroupIngress:
+        - IpProtocol: 'tcp'
+          FromPort: 22
+          ToPort: 22
+          CidrIp: "0.0.0.0/0"
   ClusterSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -339,6 +349,7 @@ Resources:
       KeyName: !Ref 'KeyPairName'
       SecurityGroups:
         - !GetAtt 'ClusterSecurityGroup.GroupId'
+        - !GetAtt 'SSHSecurityGroup.GroupId'
       IamInstanceProfile: !Ref 'ECSInstanceProfile'
       UserData: !Base64
         Fn::Sub: '#!/bin/bash
