@@ -29,7 +29,7 @@ Parameters:
     Type: AWS::EC2::VPC::Id
   KeyPairName:
     Description: SSH KeyPair name
-    Type: String
+    Type: AWS::EC2::KeyPair::KeyName
     Default: ''
   RDSAccessCidr:
     Description: CIDR block to allow to connect to database.
