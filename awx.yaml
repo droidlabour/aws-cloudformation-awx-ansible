@@ -17,16 +17,9 @@ Metadata:
           - Cluster
           - LaunchType
       - Label:
-          default: Ansible AWX Configuration
-        Parameters:
-          - AWXAdminUsername
-          - AWXAdminPassword
-      - Label:
           default: Amazon RDS Configuration
         Parameters:
           - DatabaseEndpoint
-          - MasterUsername
-          - MasterUserPassword
       - Label:
           default: Amazon CodeBuild Configuration
         Parameters:
@@ -91,21 +84,6 @@ Parameters:
     Description: Which github should we use as the source for the build
     Type: String
     Default: https://github.com/ansible/awx.git
-  MasterUserPassword:
-    Description: Master user database Password.
-    Type: String
-    NoEcho: 'true'
-  MasterUsername:
-    Description: Master database Username.
-    Type: String
-  AWXAdminPassword:
-    Description: Password for the AWX admin user.
-    Type: String
-    NoEcho: 'true'
-  AWXAdminUsername:
-    Description: AWX Admin user name
-    Type: String
-    Default: admin
   DatabaseEndpoint:
     Description: Endpoint for postgres database
     Type: String
@@ -195,13 +173,13 @@ Resources:
           - Name: pg_hostname
             Value: !Ref 'DatabaseEndpoint'
           - Name: pg_password
-            Value: !Ref MasterUserPassword
+            Value: "{{resolve:secretsmanager:RDSSecret:SecretString:password}}"
           - Name: pg_username
-            Value: !Ref MasterUsername
+            Value: "{{resolve:secretsmanager:RDSSecret:SecretString:username}}"
           - Name: awx_username
-            Value: !Ref AWXAdminUsername
+            Value: "{{resolve:secretsmanager:AWXSecret:SecretString:username}}"
           - Name: awx_password
-            Value: !Ref AWXAdminPassword
+            Value: "{{resolve:secretsmanager:AWXSecret:SecretString:password}}"
           - Name: cfn_signal_url
             Value: 'placeholder'
           - Name: cfn_stack_id
@@ -506,9 +484,9 @@ Resources:
             - Name: DATABASE_NAME
               Value: "awx"
             - Name: DATABASE_USER
-              Value: !Ref MasterUsername
+              Value: "{{resolve:secretsmanager:RDSSecret:SecretString:username}}"
             - Name: DATABASE_PASSWORD
-              Value: !Ref MasterUserPassword
+              Value: "{{resolve:secretsmanager:RDSSecret:SecretString:password}}"
             - Name: DATABASE_PORT
               Value: "5432"
             - Name: DATABASE_HOST
@@ -528,9 +506,9 @@ Resources:
             - Name: MEMCACHED_PORT
               Value: "11211"
             - Name: AWX_ADMIN_USER
-              Value: !Ref AWXAdminUsername
+              Value: "{{resolve:secretsmanager:AWXSecret:SecretString:username}}"
             - Name: AWX_ADMIN_PASSWORD
-              Value: !Ref AWXAdminPassword
+              Value: "{{resolve:secretsmanager:AWXSecret:SecretString:password}}"
         - Name: rabbitmq
           Hostname: rabbitmq
           Essential: true
@@ -569,9 +547,9 @@ Resources:
             - Name: DATABASE_NAME
               Value: "awx"
             - Name: DATABASE_USER
-              Value: !Ref MasterUsername
+              Value: "{{resolve:secretsmanager:RDSSecret:SecretString:username}}"
             - Name: DATABASE_PASSWORD
-              Value: !Ref MasterUserPassword
+              Value: "{{resolve:secretsmanager:RDSSecret:SecretString:password}}"
             - Name: DATABASE_PORT
               Value: "5432"
             - Name: DATABASE_HOST
@@ -591,9 +569,9 @@ Resources:
             - Name: MEMCACHED_PORT
               Value: "11211"
             - Name: AWX_ADMIN_USER
-              Value: !Ref AWXAdminUsername
+              Value: "{{resolve:secretsmanager:AWXSecret:SecretString:username}}"
             - Name: AWX_ADMIN_PASSWORD
-              Value: !Ref AWXAdminPassword
+              Value: "{{resolve:secretsmanager:AWXSecret:SecretString:password}}"
         - Name: memcached
           Hostname: memcached
           Essential: true
