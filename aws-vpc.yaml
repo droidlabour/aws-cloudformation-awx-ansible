@@ -4,10 +4,6 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: Amazon EC2 Configuration
-        Parameters:
-          - KeyPairName
-      - Label:
           default: Availability Zone Configuration
         Parameters:
           - AvailabilityZones
@@ -24,17 +20,11 @@ Metadata:
           - PrivateSubnet2ACIDR
           - PrivateSubnet3ACIDR
           - PrivateSubnet4ACIDR
-          - VPCTenancy
 Parameters:
   AvailabilityZones:
     Description: 'List of Availability Zones to use for the subnets in the VPC. Note:
       The logical order is preserved.'
     Type: List<AWS::EC2::AvailabilityZone::Name>
-  KeyPairName:
-    Description: Public/private key pairs allow you to securely connect to your NAT
-      instance after it launches. This is used only if the region does not support
-      NAT gateways.
-    Type: AWS::EC2::KeyPair::KeyName
   NumberOfAZs:
     AllowedValues:
       - '2'
@@ -102,13 +92,6 @@ Parameters:
     Default: 10.0.0.0/16
     Description: CIDR block for the VPC
     Type: String
-  VPCTenancy:
-    AllowedValues:
-      - default
-      - dedicated
-    Default: default
-    Description: The allowed tenancy of instances launched into the VPC
-    Type: String
 Conditions:
   3AZCondition: !Or [!Equals [!Ref 'NumberOfAZs', '3'], !Condition '4AZCondition']
   4AZCondition: !Equals [!Ref 'NumberOfAZs', '4']
@@ -127,7 +110,7 @@ Resources:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: !Ref 'VPCCIDR'
-      InstanceTenancy: !Ref 'VPCTenancy'
+      InstanceTenancy: default
       EnableDnsSupport: 'true'
       EnableDnsHostnames: 'true'
       Tags:
